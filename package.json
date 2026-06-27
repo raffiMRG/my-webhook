@@ -1,0 +1,16 @@
+{
+  "name": "my-webhook",
+  "version": "1.0.0",
+  "description": "Local webhook receiver for development",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-session": "^1.18.1",
+    "pg": "^8.13.3",
+    "uuid": "^9.0.1"
+  }
+}

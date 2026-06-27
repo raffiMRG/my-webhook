@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>my-webhook</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --sidebar:   #161b22;
+      --card:      #21262d;
+      --border:    #30363d;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --accent:    #2f81f7;
+      --green:     #3fb950;
+      --red:       #f85149;
+      --yellow:    #d29922;
+      --purple:    #a371f7;
+      --orange:    #db6d28;
+      --hover:     #1c2128;
+      --selected:  #1c2850;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-size: 13px; line-height: 1.5; }
+
+    /* ── Layout ─────────────────────────────────────────── */
+    .layout { display: flex; height: 100vh; overflow: hidden; }
+
+    /* Sidebar */
+    .sidebar {
+      width: 220px; flex-shrink: 0;
+      display: flex; flex-direction: column;
+      background: var(--sidebar); border-right: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .sidebar-header {
+      padding: 14px 12px 10px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .logo { font-weight: 700; font-size: 14px; color: var(--text); letter-spacing: -.3px; }
+    .logo span { color: var(--accent); }
+
+    #token-list { flex: 1; overflow-y: auto; padding: 6px 0; }
+    .token-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; cursor: pointer; border-left: 3px solid transparent;
+      transition: background .1s;
+    }
+    .token-item:hover { background: var(--hover); }
+    .token-item.active { background: var(--selected); border-left-color: var(--accent); }
+    .token-item-id { font-family: monospace; font-size: 11px; color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .token-item.active .token-item-id { color: var(--text); }
+    .token-badge {
+      font-size: 10px; background: var(--card); color: var(--muted);
+      border-radius: 10px; padding: 1px 6px; margin-left: 6px; flex-shrink: 0;
+    }
+    .sidebar-empty { padding: 16px 12px; color: var(--muted); font-size: 12px; }
+
+    /* Center panel */
+    .main {
+      width: 400px; flex-shrink: 0;
+      display: flex; flex-direction: column;
+      border-right: 1px solid var(--border); overflow: hidden;
+    }
+
+    .welcome {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px; padding: 24px; text-align: center;
+    }
+    .welcome h2 { font-size: 16px; color: var(--text); }
+    .welcome p { color: var(--muted); font-size: 13px; max-width: 260px; }
+
+    #token-detail { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    .token-info { padding: 14px 14px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .token-info-label { font-size: 10px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin-bottom: 4px; }
+    .url-row { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+    .url-text {
+      flex: 1; font-family: monospace; font-size: 11px; color: var(--accent);
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 5px; padding: 5px 8px; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+    .forward-row { display: flex; gap: 6px; }
+    #forward-url-input {
+      flex: 1; background: var(--card); border: 1px solid var(--border);
+      border-radius: 5px; padding: 5px 8px; color: var(--text); font-size: 12px;
+      outline: none;
+    }
+    #forward-url-input:focus { border-color: var(--accent); }
+    #forward-url-input::placeholder { color: var(--muted); }
+
+    .requests-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .requests-count { font-size: 12px; color: var(--muted); }
+    .requests-count strong { color: var(--text); }
+
+    #request-list { flex: 1; overflow-y: auto; }
+    .request-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 14px; cursor: pointer; border-left: 3px solid transparent;
+      border-bottom: 1px solid var(--border); transition: background .1s;
+    }
+    .request-item:hover { background: var(--hover); }
+    .request-item.active { background: var(--selected); border-left-color: var(--accent); }
+
+    .method-badge {
+      font-size: 10px; font-weight: 700; font-family: monospace;
+      border-radius: 3px; padding: 2px 5px; flex-shrink: 0;
+      text-transform: uppercase;
+    }
+    .m-get    { background: #1a3c1a; color: var(--green); }
+    .m-post   { background: #1a2a4a; color: var(--accent); }
+    .m-put    { background: #3a2a10; color: var(--yellow); }
+    .m-patch  { background: #2a1a3c; color: var(--purple); }
+    .m-delete { background: #3a1a1a; color: var(--red); }
+    .m-other  { background: var(--card); color: var(--muted); }
+
+    .request-meta { flex: 1; overflow: hidden; }
+    .request-path { font-family: monospace; font-size: 11px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .request-time { font-size: 10px; color: var(--muted); }
+
+    .list-empty { padding: 24px 14px; text-align: center; color: var(--muted); font-size: 12px; }
+    .list-empty .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--green); margin-right: 6px; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+
+    /* Detail panel */
+    .detail-panel {
+      flex: 1; overflow-y: auto;
+      display: flex; flex-direction: column;
+    }
+    .detail-empty {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: 13px;
+    }
+
+    #request-detail { padding: 16px; }
+    .detail-row { margin-bottom: 16px; }
+    .detail-label { font-size: 10px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin-bottom: 4px; }
+    .detail-method-path { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .detail-path { font-family: monospace; font-size: 13px; color: var(--text); word-break: break-all; }
+
+    .kv-table { width: 100%; border-collapse: collapse; }
+    .kv-table tr:nth-child(even) td { background: rgba(255,255,255,.02); }
+    .kv-table td { padding: 3px 6px; font-family: monospace; font-size: 11px; vertical-align: top; border-bottom: 1px solid var(--border); }
+    .kv-table td:first-child { color: var(--muted); white-space: nowrap; padding-right: 12px; }
+    .kv-table td:last-child { color: var(--text); word-break: break-all; }
+
+    .code-block {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 5px; padding: 10px; font-family: monospace;
+      font-size: 11px; color: var(--text); white-space: pre-wrap;
+      word-break: break-all; max-height: 340px; overflow-y: auto;
+    }
+
+    .detail-info-grid { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; }
+    .detail-info-key { color: var(--muted); }
+    .detail-info-val { font-family: monospace; color: var(--text); }
+
+    /* Buttons */
+    .btn {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 5px; color: var(--text); font-size: 12px;
+      padding: 5px 10px; cursor: pointer; white-space: nowrap;
+      transition: background .1s, border-color .1s;
+    }
+    .btn:hover { background: var(--hover); border-color: var(--muted); }
+    .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-primary:hover { opacity: .9; background: var(--accent); }
+    .btn-danger { color: var(--red); }
+    .btn-danger:hover { border-color: var(--red); background: rgba(248,81,73,.1); }
+    .btn-notify-on { color: var(--green); border-color: var(--green); }
+    .btn-notify-on:hover { background: rgba(63,185,80,.1); border-color: var(--green); }
+    .btn-notify-blocked { color: var(--muted); cursor: not-allowed; opacity: .6; }
+    .btn-sm { padding: 3px 8px; font-size: 11px; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* SSE status indicator */
+    .sse-dot {
+      display: inline-block; width: 6px; height: 6px;
+      border-radius: 50%; background: var(--muted); margin-right: 4px;
+    }
+    .sse-dot.connected { background: var(--green); animation: pulse 2s infinite; }
+
+    /* User strip */
+    .sidebar-user {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+      gap: 6px;
+    }
+    .sidebar-user-name {
+      font-size: 11px; color: var(--muted); overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap; flex: 1;
+    }
+    .sidebar-user-name strong { color: var(--text); }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <span class="logo">⚡ <span>my-webhook</span></span>
+      <button class="btn btn-primary btn-sm" id="btn-new-token">+ New</button>
+    </div>
+    <div class="sidebar-user">
+      <span class="sidebar-user-name" id="user-display">—</span>
+      <form method="POST" action="/logout" style="margin:0;flex-shrink:0">
+        <button class="btn btn-sm" type="submit">Logout</button>
+      </form>
+    </div>
+    <div id="token-list"><p class="sidebar-empty">No webhooks yet.</p></div>
+  </aside>
+
+  <!-- Center: token detail + request list -->
+  <main class="main">
+    <div class="welcome" id="welcome-screen">
+      <h2>Welcome to my-webhook</h2>
+      <p>Create a new webhook URL to start receiving HTTP requests from your other projects.</p>
+      <button class="btn btn-primary" id="btn-new-token-welcome">+ Create Webhook URL</button>
+    </div>
+
+    <div id="token-detail" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
+      <div class="token-info">
+        <div class="token-info-label">Webhook URL</div>
+        <div class="url-row">
+          <div class="url-text" id="token-url-text">—</div>
+          <button class="btn btn-sm" id="btn-copy-url">Copy</button>
+        </div>
+        <div class="token-info-label">Forward URL <span style="color:var(--muted);font-size:10px;text-transform:none;letter-spacing:0;">(optional)</span></div>
+        <div class="forward-row">
+          <input id="forward-url-input" type="url" placeholder="http://localhost:8080/callback" />
+          <button class="btn btn-sm" id="btn-save-forward">Save</button>
+          <button class="btn btn-sm btn-danger" id="btn-delete-token">Delete</button>
+        </div>
+      </div>
+
+      <div class="requests-header">
+        <span class="requests-count"><span class="sse-dot" id="sse-dot"></span><strong id="requests-count-num">0</strong> requests</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" id="btn-notify" title="Toggle desktop notifications">🔔 Notify: Off</button>
+          <button class="btn btn-sm btn-danger" id="btn-clear">Clear All</button>
+        </div>
+      </div>
+
+      <div id="request-list"></div>
+    </div>
+  </main>
+
+  <!-- Right: request detail -->
+  <aside class="detail-panel">
+    <div class="detail-empty" id="detail-empty">
+      <span>← Select a request to inspect it</span>
+    </div>
+    <div id="request-detail" style="display:none;"></div>
+  </aside>
+
+</div>
+<script src="app.js"></script>
+</body>
+</html>
