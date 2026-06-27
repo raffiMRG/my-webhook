@@ -312,13 +312,41 @@ updateNotifyBtn();
 document.getElementById('btn-new-token').addEventListener('click', createToken);
 document.getElementById('btn-new-token-welcome').addEventListener('click', createToken);
 
+function copyToClipboard(text, btn) {
+  // navigator.clipboard hanya tersedia di HTTPS / localhost (secure context)
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text)
+      .then(() => flashBtn(btn, 'Copied!', 'Copy'))
+      .catch(() => execCopy(text, btn));
+  } else {
+    execCopy(text, btn);
+  }
+}
+
+function execCopy(text, btn) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try {
+    document.execCommand('copy');
+    flashBtn(btn, 'Copied!', 'Copy');
+  } catch {
+    flashBtn(btn, 'Failed', 'Copy');
+  }
+  document.body.removeChild(ta);
+}
+
+function flashBtn(btn, msg, reset) {
+  btn.textContent = msg;
+  setTimeout(() => { btn.textContent = reset; }, 1500);
+}
+
 document.getElementById('btn-copy-url').addEventListener('click', () => {
   const url = document.getElementById('token-url-text').textContent;
-  navigator.clipboard.writeText(url).then(() => {
-    const btn = document.getElementById('btn-copy-url');
-    btn.textContent = 'Copied!';
-    setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
-  });
+  copyToClipboard(url, document.getElementById('btn-copy-url'));
 });
 
 document.getElementById('btn-save-forward').addEventListener('click', async () => {

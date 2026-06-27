@@ -5,12 +5,12 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL || 'postgresql://webhook:webhook_pass@localhost:5432/webhooks',
 });
 
-// pg returns BIGINT columns as strings — convert numeric fields to JS numbers
+// pg returns BIGINT as strings — only convert timestamp fields.
+// INTEGER/SERIAL (id, user_id) sudah dikembalikan sebagai JS number oleh pg.
+// Token id adalah UUID (TEXT), jangan dikonversi.
 function norm(row) {
   if (!row) return null;
   const r = { ...row };
-  if ('id'          in r) r.id          = Number(r.id);
-  if ('user_id'     in r) r.user_id     = Number(r.user_id);
   if ('created_at'  in r) r.created_at  = Number(r.created_at);
   if ('received_at' in r) r.received_at = Number(r.received_at);
   return r;

@@ -12,7 +12,7 @@ COPY . .
 # Prepare data directory with correct ownership before switching user
 RUN mkdir -p data && chown -R node:node /app
 
-EXPOSE 3000
+EXPOSE 1333
 
 USER node
 

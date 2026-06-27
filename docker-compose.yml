@@ -18,9 +18,9 @@ services:
   app:
     build: .
     ports:
-      - "${PORT:-3000}:3000"
+      - "1333:1333"
     environment:
-      PORT:           "3000"
+      PORT:           "1333"
       DATABASE_URL:   "postgresql://webhook:webhook_pass@postgres:5432/webhooks"
       SESSION_SECRET: "ganti-ini-dengan-string-acak-panjang-di-production"
     depends_on:
@@ -28,7 +28,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/login"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:1333/login"]
       interval: 30s
       timeout: 5s
       retries: 3
